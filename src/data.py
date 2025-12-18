@@ -1,14 +1,6 @@
 
 
 class AiringListData:
-    MEDIA_LIST_STATUS = [
-        "CURRENT",
-        "PLANNING",
-        "COMPLETED",
-        "DROPPED",
-        "PAUSED",
-        "REPEATING",
-    ]
 
     airing_anilist = []
 
