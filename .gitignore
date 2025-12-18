@@ -1,5 +1,6 @@
 # My Python.gitignore file
 secret.json
+token.json
 .anicalendar_venv/
 
 
