@@ -1,0 +1,34 @@
+query{
+  MediaListCollection(
+      userName: "ChuckySRB",
+      type: ANIME
+    )
+    { lists{
+      name
+      isCustomList
+      entries{
+        status
+        customLists
+        media{
+          title{
+            english
+            romaji
+          }
+          season
+          seasonYear
+          episodes
+          nextAiringEpisode {
+            airingAt
+            episode
+          }
+          # This provides the exact time the first episode aired
+          startDate {
+            year
+            month
+            day
+          }
+        }
+        }
+      }
+    }
+}
