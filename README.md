@@ -41,7 +41,12 @@ pip install -r requirements.txt
 Run the script using the following arguments:
 
 ```cmd
-python run.py -u YourUsername -s Winter -y 2026
+python run.py -u YourUsername -s Season -y Year
+# My Commands 
+python run.py -u ChuckySRB -s Winter -y 2026
+python run.py -u ChuckySRB -s Spring -y 2026
+python run.py -u ChuckySRB -s Summer -y 2026
+python run.py -u ChuckySRB -s Fall -y 2026
 
 ```
 
