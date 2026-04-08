@@ -15,11 +15,22 @@ def get_calendar_service():
     # The file token.json stores the user's access and refresh tokens
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    
+
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                # If token refresh fails, delete the invalid token and re-authenticate
+                print(f"Token refresh failed: {e}")
+                print("Deleting invalid token and re-authenticating...")
+                if os.path.exists('token.json'):
+                    os.remove('token.json')
+                # Trigger re-authentication
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'secret.json', SCOPES)
+                creds = flow.run_local_server(port=0)
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
                 'secret.json', SCOPES)
