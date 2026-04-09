@@ -386,11 +386,11 @@
     <aside>
       <h2>Current Season Catch-up</h2>
       <div id="catchupSummary" class="catchup-summary">
-        <p id="totalBehindValue" class="behind-total">0 episodes behind</p>
+        <p id="totalBehindValue" class="behind-total" aria-live="polite">0 episodes behind</p>
         <div class="watch-progress" aria-label="Watched progress compared to released episodes">
           <div id="watchProgressFill" class="watch-progress-fill"></div>
         </div>
-        <div id="watchProgressLabel" class="watch-progress-label">Watched 0 / 0 released (0%)</div>
+        <div id="watchProgressLabel" class="watch-progress-label" aria-live="polite">Watched 0 / 0 released (0%)</div>
       </div>
       <div id="catchupList" class="catchup-list"></div>
     </aside>
@@ -424,7 +424,7 @@
     const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const CATCHUP_LINKS_KEY = "anicalendar_streaming_links";
     const MAX_FUTURE_YEARS_OFFSET = 10;
-    const TWO_COUR_EPISODE_THRESHOLD = 20;
+    const PREVIOUS_SEASON_CARRYOVER_MIN_EPISODES = 20;
     const FALLBACK_TIMEZONE = "Europe/Belgrade";
     const USER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIMEZONE;
     const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -541,11 +541,15 @@
       if (isCurrentSeason) return true;
       const previous = getPreviousSeasonYear(season, year);
       const isPreviousSeason = media.season === previous.season && media.seasonYear === previous.year;
-      return isPreviousSeason && Number(media.episodes || 0) >= TWO_COUR_EPISODE_THRESHOLD;
+      return isPreviousSeason && Number(media.episodes || 0) >= PREVIOUS_SEASON_CARRYOVER_MIN_EPISODES;
     }
 
     function clampWatchedProgress(progress, aired) {
       return Math.max(0, Math.min(progress, aired));
+    }
+
+    function clampPercentage(value) {
+      return Math.max(0, Math.min(100, value));
     }
 
     function escapeHTML(text = "") {
@@ -700,7 +704,7 @@
       const watchedPercent = releasedTotal > 0 ? Math.round((watchedTotal / releasedTotal) * 100) : 0;
       const behindLabel = episodesBehindTotal === 1 ? "episode" : "episodes";
       ui.totalBehindValue.textContent = `${episodesBehindTotal} ${behindLabel} behind`;
-      ui.watchProgressFill.style.width = `${Math.max(0, Math.min(100, watchedPercent))}%`;
+      ui.watchProgressFill.style.width = `${clampPercentage(watchedPercent)}%`;
       ui.watchProgressLabel.textContent = `Watched ${watchedTotal} / ${releasedTotal} released (${watchedPercent}%)`;
 
       if (!items.length) {
