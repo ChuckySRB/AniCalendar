@@ -530,7 +530,7 @@
       const aired = all.filter(n => n.airingAt <= nowTs).length;
       if (aired > 0) return aired;
       if (media.episodes) return media.episodes;
-      return aired;
+      return 0;
     }
 
     function renderCatchupList(entries) {
