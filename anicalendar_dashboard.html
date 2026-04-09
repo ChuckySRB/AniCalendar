@@ -455,7 +455,7 @@
 
     async function fetchSeasonalData(user, season, year) {
       const query = `
-        query ($userName: String, $season: MediaSeason, $year: Int) {
+        query ($userName: String) {
           MediaListCollection(userName: $userName, type: ANIME) {
             lists {
               entries {
@@ -470,10 +470,7 @@
                   title { romaji english }
                   coverImage { large }
                   nextAiringEpisode { episode airingAt }
-                  pastAiring: airingSchedule(notYetAired: false, perPage: 100) {
-                    nodes { episode airingAt }
-                  }
-                  futureAiring: airingSchedule(notYetAired: true, perPage: 100) {
+                  airingSchedule(perPage: 100) {
                     nodes { episode airingAt }
                   }
                 }
@@ -486,7 +483,7 @@
       const response = await fetch(ANILIST_API, {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ query, variables: { userName: user, season, year } }),
+        body: JSON.stringify({ query, variables: { userName: user } }),
       });
 
       if (!response.ok) {
@@ -518,10 +515,7 @@
 
     function getAllAiringNodes(media) {
       const map = new Map();
-      for (const node of media.pastAiring?.nodes || []) {
-        if (node?.episode && node?.airingAt) map.set(node.episode, node.airingAt);
-      }
-      for (const node of media.futureAiring?.nodes || []) {
+      for (const node of media.airingSchedule?.nodes || []) {
         if (node?.episode && node?.airingAt) map.set(node.episode, node.airingAt);
       }
       return [...map.entries()]
@@ -531,10 +525,11 @@
 
     function calculateAiredCount(media) {
       if (media.nextAiringEpisode?.episode) return Math.max(0, media.nextAiringEpisode.episode - 1);
-      if (media.episodes) return media.episodes;
       const all = getAllAiringNodes(media);
       const nowTs = Math.floor(Date.now() / 1000);
       const aired = all.filter(n => n.airingAt <= nowTs).length;
+      if (aired > 0) return aired;
+      if (media.episodes) return media.episodes;
       return aired;
     }
 
