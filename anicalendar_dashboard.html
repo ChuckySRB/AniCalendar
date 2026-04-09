@@ -371,11 +371,6 @@
       hour: "2-digit",
       minute: "2-digit",
     });
-    const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
-      timeZone: USER_TIMEZONE,
-      weekday: "short",
-    });
-    const WEEKDAY_INDEX = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
 
     const ui = {
       userInput: document.getElementById("userInput"),
@@ -448,11 +443,8 @@
     }
 
     function getWeekdayIndex(date) {
-      const weekday = WEEKDAY_FORMATTER.format(date);
-      if (Object.prototype.hasOwnProperty.call(WEEKDAY_INDEX, weekday)) {
-        return WEEKDAY_INDEX[weekday];
-      }
-      return (date.getDay() + 6) % 7;
+      const zoned = new Date(date.toLocaleString("en-US", { timeZone: USER_TIMEZONE }));
+      return (zoned.getDay() + 6) % 7;
     }
 
     function escapeHTML(text = "") {
