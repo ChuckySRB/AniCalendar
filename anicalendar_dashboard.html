@@ -683,9 +683,15 @@
         })
         .sort((a, b) => b.missing - a.missing);
 
-      const releasedTotal = items.reduce((sum, item) => sum + Math.max(0, item.aired), 0);
-      const watchedTotal = items.reduce((sum, item) => sum + Math.max(0, Math.min(item.entry.progress, item.aired)), 0);
-      const episodesBehindTotal = items.reduce((sum, item) => sum + item.missing, 0);
+      const totals = items.reduce((acc, item) => {
+        const released = Math.max(0, item.aired);
+        const watched = Math.max(0, Math.min(item.entry.progress, item.aired));
+        acc.releasedTotal += released;
+        acc.watchedTotal += watched;
+        acc.episodesBehindTotal += item.missing;
+        return acc;
+      }, { releasedTotal: 0, watchedTotal: 0, episodesBehindTotal: 0 });
+      const { releasedTotal, watchedTotal, episodesBehindTotal } = totals;
       const watchedPercent = releasedTotal > 0 ? Math.round((watchedTotal / releasedTotal) * 100) : 0;
       const behindLabel = episodesBehindTotal === 1 ? "episode" : "episodes";
       ui.totalBehindValue.textContent = `${episodesBehindTotal} ${behindLabel} behind`;
