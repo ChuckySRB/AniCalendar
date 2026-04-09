@@ -386,11 +386,11 @@
     <aside>
       <h2>Current Season Catch-up</h2>
       <div id="catchupSummary" class="catchup-summary">
-        <p id="totalBehindValue" class="behind-total" aria-live="polite">0 episodes behind</p>
+        <p id="totalBehindValue" class="behind-total" aria-live="polite" aria-atomic="true">0 episodes behind</p>
         <div class="watch-progress" aria-label="Watched progress compared to released episodes">
           <div id="watchProgressFill" class="watch-progress-fill"></div>
         </div>
-        <div id="watchProgressLabel" class="watch-progress-label" aria-live="polite">Watched 0 / 0 released (0%)</div>
+        <div id="watchProgressLabel" class="watch-progress-label" aria-live="polite" aria-atomic="true">Watched 0 / 0 released (0%)</div>
       </div>
       <div id="catchupList" class="catchup-list"></div>
     </aside>
@@ -544,12 +544,18 @@
       return isPreviousSeason && Number(media.episodes || 0) >= PREVIOUS_SEASON_CARRYOVER_MIN_EPISODES;
     }
 
-    function clampWatchedProgress(progress, aired) {
+    function clampProgressToAired(progress, aired) {
       return Math.max(0, Math.min(progress, aired));
     }
 
     function clampPercentage(value) {
       return Math.max(0, Math.min(100, value));
+    }
+
+    function resetCatchupSummaryUI() {
+      ui.totalBehindValue.textContent = "0 episodes behind";
+      ui.watchProgressFill.style.width = "0%";
+      ui.watchProgressLabel.textContent = "Watched 0 / 0 released (0%)";
     }
 
     function escapeHTML(text = "") {
@@ -694,7 +700,7 @@
 
       const totals = items.reduce((acc, item) => {
         const released = Math.max(0, item.aired);
-        const watched = clampWatchedProgress(item.entry.progress, item.aired);
+        const watched = clampProgressToAired(item.entry.progress, item.aired);
         acc.releasedTotal += released;
         acc.watchedTotal += watched;
         acc.episodesBehindTotal += item.missing;
@@ -794,9 +800,8 @@
     }
 
     async function reloadData() {
+      resetCatchupSummaryUI();
       ui.totalBehindValue.textContent = "Loading catch-up totals...";
-      ui.watchProgressFill.style.width = "0%";
-      ui.watchProgressLabel.textContent = "Watched 0 / 0 released (0%)";
       ui.catchupList.innerHTML = `<div class="empty">Loading...</div>`;
       ui.scheduleGrid.innerHTML = `<div class="empty">Loading...</div>`;
       try {
@@ -806,9 +811,7 @@
         ui.weekLabel.textContent = weekRangeLabel(state.selectedWeekStart);
       } catch (err) {
         const message = err?.message || "Unknown error";
-        ui.totalBehindValue.textContent = "0 episodes behind";
-        ui.watchProgressFill.style.width = "0%";
-        ui.watchProgressLabel.textContent = "Watched 0 / 0 released (0%)";
+        resetCatchupSummaryUI();
         ui.catchupList.innerHTML = `<div class="empty">Failed to load data: ${escapeHTML(message)}</div>`;
         ui.scheduleGrid.innerHTML = `<div class="empty">Failed to load weekly schedule.</div>`;
       }
