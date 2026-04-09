@@ -447,6 +447,14 @@
       return getMondayStart(new Date(year, getSeasonStartMonth(season), 1));
     }
 
+    function getWeekdayIndex(date) {
+      const weekday = WEEKDAY_FORMATTER.format(date);
+      if (Object.prototype.hasOwnProperty.call(WEEKDAY_INDEX, weekday)) {
+        return WEEKDAY_INDEX[weekday];
+      }
+      return (date.getDay() + 6) % 7;
+    }
+
     function escapeHTML(text = "") {
       return text
         .replaceAll("&", "&amp;")
@@ -621,7 +629,7 @@
           if (node.episode <= progress) continue;
           if (node.airingAt < weekStartTs || node.airingAt >= weekEndTs) continue;
           const d = new Date(node.airingAt * 1000);
-          const idx = WEEKDAY_INDEX[WEEKDAY_FORMATTER.format(d)] ?? 0;
+          const idx = getWeekdayIndex(d);
           perDay[idx].push({ media, node });
         }
       }
