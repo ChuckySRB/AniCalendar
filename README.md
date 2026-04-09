@@ -50,6 +50,22 @@ python run.py -u ChuckySRB -s Fall -y 2026
 
 ```
 
+### 5. Dashboard Page (AniList Catch-up View)
+
+Open `/anicalendar_dashboard.html` in your browser to use the seasonal catch-up dashboard.
+
+Default values:
+- User: `ChuckySRB`
+- Season: current season
+- Year: current year
+
+Features:
+- Weekly schedule view (Monday-first, previous/next week arrows)
+- Current week loaded by default with current day highlighted
+- Left catch-up list sorted by how many aired episodes you are behind
+- Color severity for backlog (`5+` red, `3-4` orange, `2` yellow, `1` white, `0` green)
+- Streaming-link modal on anime card click (saved in browser local storage)
+
 ---
 
 ## 🛠 Command Line Arguments
