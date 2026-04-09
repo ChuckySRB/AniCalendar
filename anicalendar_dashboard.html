@@ -357,6 +357,7 @@
     const ANILIST_API = "https://graphql.anilist.co";
     const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const CATCHUP_LINKS_KEY = "anicalendar_streaming_links";
+    const MAX_FUTURE_YEARS = 10;
 
     const ui = {
       userInput: document.getElementById("userInput"),
@@ -554,8 +555,8 @@
 
       for (const item of items) {
         const severity = severityLevel(item.missing);
-        const catchupMetaText = `${item.missing} episode(s) behind • Progress ${item.entry.progress}`;
-        const card = buildCard(item.entry.media, catchupMetaText, severity);
+        const metaText = `${item.missing} episode(s) behind • Progress ${item.entry.progress}`;
+        const card = buildCard(item.entry.media, metaText, severity);
         ui.catchupList.appendChild(card);
       }
     }
@@ -689,7 +690,7 @@
       state.year = new Date().getFullYear();
       state.selectedWeekStart = getMondayStart(new Date());
 
-      ui.yearInput.max = String(new Date().getFullYear() + 10);
+      ui.yearInput.max = String(new Date().getFullYear() + MAX_FUTURE_YEARS);
       ui.userInput.value = state.user;
       ui.seasonInput.value = state.season;
       ui.yearInput.value = String(state.year);
