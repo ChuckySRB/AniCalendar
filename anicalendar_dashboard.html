@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AniCalendar Dashboard</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --panel: #151f35;
+      --panel-2: #1d2a4a;
+      --text: #d7e3ff;
+      --muted: #92a2c5;
+      --accent: #2b7fff;
+      --border: #2a3a63;
+      --danger: #ff5f63;
+      --warning: #ff9d42;
+      --mid: #ffd54a;
+      --ok: #76d47c;
+      --neutral: #c9d2e7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #0a0f1e 0%, #0f1730 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 15, 25, 0.92);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: #f0f5ff;
+    }
+
+    .logo {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #2b7fff, #74b2ff);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      color: #fff;
+      box-shadow: 0 0 18px rgba(43, 127, 255, 0.45);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .controls input,
+    .controls select,
+    .controls button {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 0.9rem;
+    }
+
+    .controls button {
+      cursor: pointer;
+      background: var(--accent);
+      border-color: #3e8cff;
+      font-weight: 600;
+    }
+
+    .week-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .week-nav button {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .week-label {
+      min-width: 240px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 14px;
+      padding: 14px;
+      flex: 1;
+    }
+
+    aside,
+    .schedule-wrapper {
+      border: 1px solid var(--border);
+      background: rgba(21, 31, 53, 0.84);
+      border-radius: 14px;
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    aside h2,
+    .schedule-title {
+      margin: 0 0 10px;
+      font-size: 1rem;
+      color: #edf4ff;
+    }
+
+    .catchup-list {
+      display: grid;
+      gap: 8px;
+      max-height: calc(100vh - 230px);
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .catchup-summary {
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #33548f;
+      border-radius: 10px;
+      background: rgba(22, 40, 76, 0.6);
+    }
+
+    .behind-total {
+      margin: 0 0 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #edf4ff;
+    }
+
+    .watch-progress {
+      width: 100%;
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(16, 25, 44, 0.9);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .watch-progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #2b7fff, #74b2ff);
+      transition: width 0.2s ease;
+    }
+
+    .watch-progress-label {
+      margin-top: 6px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(190px, 1fr));
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+
+    .day-column {
+      background: rgba(9, 15, 30, 0.55);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .day-header {
+      padding: 10px;
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: #e3edff;
+      border-bottom: 1px solid rgba(42, 58, 99, 0.65);
+    }
+
+    .day-header.current {
+      margin: 6px;
+      border-radius: 999px;
+      background: rgba(43, 127, 255, 0.2);
+      border: 1px solid rgba(88, 157, 255, 0.6);
+      text-align: center;
+    }
+
+    .day-body {
+      padding: 8px;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .anime-card {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 8px;
+      background: #13203e;
+      border: 1px solid #264071;
+      border-radius: 10px;
+      padding: 6px;
+      cursor: pointer;
+      transition: transform 0.13s ease, border-color 0.13s ease;
+    }
+
+    .anime-card:hover {
+      transform: translateY(-1px);
+      border-color: #3e73be;
+    }
+
+    .anime-cover {
+      width: 42px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 7px;
+      background: #10172c;
+    }
+
+    .anime-name {
+      margin: 0;
+      font-size: 0.84rem;
+      line-height: 1.2;
+      color: #eef4ff;
+    }
+
+    .anime-meta {
+      margin-top: 2px;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .severity-0 { border-left: 4px solid var(--ok); }
+    .severity-1 { border-left: 4px solid var(--neutral); }
+    .severity-2 { border-left: 4px solid var(--mid); }
+    .severity-3, .severity-4 { border-left: 4px solid var(--warning); }
+    .severity-5 { border-left: 4px solid var(--danger); }
+
+    .empty {
+      color: var(--muted);
+      font-size: 0.84rem;
+      text-align: center;
+      padding: 12px 8px;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: center;
+      background: rgba(11, 15, 25, 0.9);
+    }
+
+    footer a {
+      color: #9cc2ff;
+      text-decoration: none;
+      margin: 0 6px;
+    }
+
+    dialog {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #101b34;
+      color: var(--text);
+      width: min(440px, 90vw);
+      padding: 14px;
+    }
+
+    dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .modal-actions button {
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 7px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .modal-actions button.primary {
+      background: var(--accent);
+      border-color: #3e8cff;
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #3a5f98 #111c35;
+    }
+
+    *::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    *::-webkit-scrollbar-track {
+      background: #111c35;
+      border-radius: 999px;
+    }
+
+    *::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #2b4f86, #3f6db3);
+      border-radius: 999px;
+      border: 2px solid #111c35;
+    }
+
+    @media (max-width: 1100px) {
+      main { grid-template-columns: 1fr; }
+      .catchup-list { max-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-row">
+      <div class="brand">
+        <div class="logo">A</div>
+        <span>AniCalendar</span>
+      </div>
+      <div class="controls">
+        <input id="userInput" type="text" placeholder="AniList user" />
+        <select id="seasonInput">
+          <option>WINTER</option>
+          <option>SPRING</option>
+          <option>SUMMER</option>
+          <option>FALL</option>
+        </select>
+        <input id="yearInput" type="number" min="1990" />
+        <button id="loadBtn">Load</button>
+      </div>
+      <div class="week-nav">
+        <button id="prevWeekBtn" aria-label="Previous week">←</button>
+        <div id="weekLabel" class="week-label"></div>
+        <button id="nextWeekBtn" aria-label="Next week">→</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <h2>Current Season Catch-up</h2>
+      <div id="catchupSummary" class="catchup-summary">
+        <p id="totalBehindValue" class="behind-total" aria-live="polite" aria-atomic="true">0 episodes behind</p>
+        <div class="watch-progress" aria-label="Watched progress compared to released episodes">
+          <div id="watchProgressFill" class="watch-progress-fill"></div>
+        </div>
+        <div id="watchProgressLabel" class="watch-progress-label" aria-live="polite" aria-atomic="true">Watched 0 / 0 released (0%)</div>
+      </div>
+      <div id="catchupList" class="catchup-list"></div>
+    </aside>
+
+    <section class="schedule-wrapper">
+      <h2 class="schedule-title">Weekly Unwatched Schedule</h2>
+      <div id="scheduleGrid" class="grid"></div>
+    </section>
+  </main>
+
+  <footer>
+    © ChuckySRB 2026 ·
+    <a href="https://anilist.co/user/ChuckySRB/" target="_blank" rel="noopener noreferrer">AniList Profile</a> ·
+    <a href="https://github.com/ChuckySRB/AniCalendar" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+  </footer>
+
+  <dialog id="linkModal">
+    <form method="dialog" id="linkForm">
+      <h3 style="margin:0 0 10px;">Add streaming link</h3>
+      <p id="modalAnimeTitle" style="margin:0 0 8px;color:var(--muted);"></p>
+      <input id="streamingLinkInput" type="url" placeholder="https://..." required style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);" />
+      <div class="modal-actions">
+        <button type="button" id="cancelModalBtn">Cancel</button>
+        <button type="submit" class="primary">Save Link</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const ANILIST_API = "https://graphql.anilist.co";
+    const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const CATCHUP_LINKS_KEY = "anicalendar_streaming_links";
+    const MAX_FUTURE_YEARS_OFFSET = 10;
+    const PREVIOUS_SEASON_CARRYOVER_MIN_EPISODES = 20;
+    const FALLBACK_TIMEZONE = "Europe/Belgrade";
+    const USER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIMEZONE;
+    const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+      timeZone: USER_TIMEZONE,
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    });
+    const TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
+      timeZone: USER_TIMEZONE,
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
+      timeZone: USER_TIMEZONE,
+      weekday: "short",
+    });
+
+    const ui = {
+      userInput: document.getElementById("userInput"),
+      seasonInput: document.getElementById("seasonInput"),
+      yearInput: document.getElementById("yearInput"),
+      loadBtn: document.getElementById("loadBtn"),
+      prevWeekBtn: document.getElementById("prevWeekBtn"),
+      nextWeekBtn: document.getElementById("nextWeekBtn"),
+      weekLabel: document.getElementById("weekLabel"),
+      catchupSummary: document.getElementById("catchupSummary"),
+      totalBehindValue: document.getElementById("totalBehindValue"),
+      watchProgressFill: document.getElementById("watchProgressFill"),
+      watchProgressLabel: document.getElementById("watchProgressLabel"),
+      catchupList: document.getElementById("catchupList"),
+      scheduleGrid: document.getElementById("scheduleGrid"),
+      linkModal: document.getElementById("linkModal"),
+      linkForm: document.getElementById("linkForm"),
+      modalAnimeTitle: document.getElementById("modalAnimeTitle"),
+      streamingLinkInput: document.getElementById("streamingLinkInput"),
+      cancelModalBtn: document.getElementById("cancelModalBtn"),
+    };
+
+    const state = {
+      user: "ChuckySRB",
+      season: "",
+      year: 0,
+      selectedWeekStart: null,
+      entries: [],
+      pendingModalAnime: null,
+    };
+
+    function detectCurrentSeason(date = new Date()) {
+      const month = date.getMonth() + 1;
+      if (month <= 3) return "WINTER";
+      if (month <= 6) return "SPRING";
+      if (month <= 9) return "SUMMER";
+      return "FALL";
+    }
+
+    function getMondayStart(date = new Date()) {
+      const local = new Date(date);
+      const day = (local.getDay() + 6) % 7;
+      local.setHours(0, 0, 0, 0);
+      local.setDate(local.getDate() - day);
+      return local;
+    }
+
+    function weekRangeLabel(startDate) {
+      const end = new Date(startDate);
+      end.setDate(end.getDate() + 6);
+      return `${DATE_FORMATTER.format(startDate)} - ${DATE_FORMATTER.format(end)}`;
+    }
+
+    function getDateKey(date) {
+      const parts = DATE_FORMATTER.formatToParts(date);
+      const year = parts.find(p => p.type === "year")?.value || "";
+      const month = (parts.find(p => p.type === "month")?.value || "").padStart(2, "0");
+      const day = (parts.find(p => p.type === "day")?.value || "").padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function getSeasonStartMonth(season) {
+      if (season === "WINTER") return 0;
+      if (season === "SPRING") return 3;
+      if (season === "SUMMER") return 6;
+      return 9;
+    }
+
+    function getWeekStartForSelection(season, year) {
+      const current = new Date();
+      const isCurrentSelection = season === detectCurrentSeason(current) && year === current.getFullYear();
+      if (isCurrentSelection) return getMondayStart(current);
+      return getMondayStart(new Date(year, getSeasonStartMonth(season), 1));
+    }
+
+    function getWeekdayIndex(date) {
+      const weekday = WEEKDAY_FORMATTER.formatToParts(date).find(p => p.type === "weekday")?.value;
+      if (weekday === "Mon") return 0;
+      if (weekday === "Tue") return 1;
+      if (weekday === "Wed") return 2;
+      if (weekday === "Thu") return 3;
+      if (weekday === "Fri") return 4;
+      if (weekday === "Sat") return 5;
+      if (weekday === "Sun") return 6;
+      return (date.getDay() + 6) % 7;
+    }
+
+    function getPreviousSeasonYear(season, year) {
+      if (season === "WINTER") return { season: "FALL", year: year - 1 };
+      if (season === "SPRING") return { season: "WINTER", year };
+      if (season === "SUMMER") return { season: "SPRING", year };
+      return { season: "SUMMER", year };
+    }
+
+    function shouldIncludeMediaInSelection(media, season, year) {
+      const isCurrentSeason = media.season === season && media.seasonYear === year;
+      if (isCurrentSeason) return true;
+      const previous = getPreviousSeasonYear(season, year);
+      const isPreviousSeason = media.season === previous.season && media.seasonYear === previous.year;
+      return isPreviousSeason && Number(media.episodes || 0) >= PREVIOUS_SEASON_CARRYOVER_MIN_EPISODES;
+    }
+
+    function clampProgressToAired(progress, aired) {
+      return Math.max(0, Math.min(progress, aired));
+    }
+
+    function clampPercentage(value) {
+      return Math.max(0, Math.min(100, value));
+    }
+
+    function resetCatchupSummaryUI() {
+      ui.totalBehindValue.textContent = "0 episodes behind";
+      ui.watchProgressFill.style.width = "0%";
+      ui.watchProgressLabel.textContent = "Watched 0 / 0 released (0%)";
+    }
+
+    function escapeHTML(text = "") {
+      return text
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function getStoredLinks() {
+      try {
+        return JSON.parse(localStorage.getItem(CATCHUP_LINKS_KEY) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function setStoredLink(animeId, url) {
+      const links = getStoredLinks();
+      links[animeId] = url;
+      localStorage.setItem(CATCHUP_LINKS_KEY, JSON.stringify(links));
+    }
+
+    function severityLevel(missingCount) {
+      if (missingCount >= 5) return 5;
+      if (missingCount >= 4) return 4;
+      if (missingCount >= 3) return 3;
+      if (missingCount >= 2) return 2;
+      if (missingCount >= 1) return 1;
+      return 0;
+    }
+
+    function buildCard(anime, metaText, severity, episodeAiringAt = null, episodeNumber = null) {
+      const card = document.createElement("article");
+      card.className = `anime-card severity-${severity}`;
+      card.innerHTML = `
+        <img class="anime-cover" src="${escapeHTML(anime.coverImage?.large || "")}" alt="">
+        <div>
+          <p class="anime-name">${escapeHTML(anime.title?.english || anime.title?.romaji || "Untitled Anime")}</p>
+          <div class="anime-meta">${escapeHTML(metaText)}</div>
+        </div>
+      `;
+      card.addEventListener("click", () => onAnimeCardClick(anime, { episodeAiringAt, episodeNumber }));
+      return card;
+    }
+
+    async function fetchSeasonalData(user, season, year) {
+      const query = `
+        query ($userName: String) {
+          MediaListCollection(userName: $userName, type: ANIME) {
+            lists {
+              entries {
+                status
+                progress
+                media {
+                  id
+                  siteUrl
+                  season
+                  seasonYear
+                  episodes
+                  title { romaji english }
+                  coverImage { large }
+                  nextAiringEpisode { episode airingAt }
+                  airingSchedule(perPage: 100) {
+                    nodes { episode airingAt }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const response = await fetch(ANILIST_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ query, variables: { userName: user } }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`AniList request failed: ${response.status}`);
+      }
+
+      const json = await response.json();
+      if (json.errors?.length) {
+        throw new Error(json.errors[0].message || "AniList API error");
+      }
+
+      const lists = json?.data?.MediaListCollection?.lists || [];
+      const byMediaId = new Map();
+      for (const list of lists) {
+        for (const entry of list.entries || []) {
+          const media = entry.media;
+          if (!media) continue;
+          if (entry.status === "DROPPED") continue;
+          if (!shouldIncludeMediaInSelection(media, season, year)) continue;
+          const normalized = {
+            status: entry.status,
+            progress: Number(entry.progress || 0),
+            media,
+          };
+          const existing = byMediaId.get(media.id);
+          if (!existing || normalized.progress > existing.progress) {
+            byMediaId.set(media.id, normalized);
+          }
+        }
+      }
+      return [...byMediaId.values()];
+    }
+
+    function getAllAiringNodes(media) {
+      const map = new Map();
+      for (const node of media.airingSchedule?.nodes || []) {
+        if (node?.episode && node?.airingAt) map.set(node.episode, node.airingAt);
+      }
+      return [...map.entries()]
+        .map(([episode, airingAt]) => ({ episode, airingAt }))
+        .sort((a, b) => a.airingAt - b.airingAt);
+    }
+
+    function calculateAiredCount(media) {
+      if (media.nextAiringEpisode?.episode) return Math.max(0, media.nextAiringEpisode.episode - 1);
+      const all = getAllAiringNodes(media);
+      const nowTs = Math.floor(Date.now() / 1000);
+      const aired = all.filter(n => n.airingAt <= nowTs).length;
+      if (aired > 0) return aired;
+      if (media.episodes) return media.episodes;
+      return 0;
+    }
+
+    function renderCatchupList(entries) {
+      ui.catchupList.innerHTML = "";
+      const items = entries
+        .map(entry => {
+          const aired = calculateAiredCount(entry.media);
+          const missing = Math.max(0, aired - entry.progress);
+          return { entry, missing, aired };
+        })
+        .sort((a, b) => b.missing - a.missing);
+
+      const totals = items.reduce((acc, item) => {
+        const released = Math.max(0, item.aired);
+        const watched = clampProgressToAired(item.entry.progress, item.aired);
+        acc.releasedTotal += released;
+        acc.watchedTotal += watched;
+        acc.episodesBehindTotal += item.missing;
+        return acc;
+      }, { releasedTotal: 0, watchedTotal: 0, episodesBehindTotal: 0 });
+      const { releasedTotal, watchedTotal, episodesBehindTotal } = totals;
+      const watchedPercent = releasedTotal > 0 ? Math.round((watchedTotal / releasedTotal) * 100) : 0;
+      const behindLabel = episodesBehindTotal === 1 ? "episode" : "episodes";
+      ui.totalBehindValue.textContent = `${episodesBehindTotal} ${behindLabel} behind`;
+      ui.watchProgressFill.style.width = `${clampPercentage(watchedPercent)}%`;
+      ui.watchProgressLabel.textContent = `Watched ${watchedTotal} / ${releasedTotal} released (${watchedPercent}%)`;
+
+      if (!items.length) {
+        ui.catchupList.innerHTML = `<div class="empty">No anime found for this season/user.</div>`;
+        return;
+      }
+
+      for (const item of items) {
+        const severity = severityLevel(item.missing);
+        const episodeLabel = item.missing === 1 ? "episode" : "episodes";
+        const metaText = `${item.missing} ${episodeLabel} behind • Progress ${item.entry.progress}`;
+        const card = buildCard(item.entry.media, metaText, severity);
+        ui.catchupList.appendChild(card);
+      }
+    }
+
+    function renderWeeklySchedule(entries, weekStart) {
+      ui.scheduleGrid.innerHTML = "";
+
+      const now = new Date();
+      const isCurrentWeek = getMondayStart(now).getTime() === weekStart.getTime();
+      const weekStartTs = Math.floor(weekStart.getTime() / 1000);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 7);
+      const weekEndTs = Math.floor(weekEnd.getTime() / 1000);
+
+      const perDay = Array.from({ length: 7 }, () => []);
+      for (const entry of entries) {
+        const progress = entry.progress;
+        const media = entry.media;
+        const allNodes = getAllAiringNodes(media);
+
+        for (const node of allNodes) {
+          if (node.episode <= progress) continue;
+          if (node.airingAt < weekStartTs || node.airingAt >= weekEndTs) continue;
+          const d = new Date(node.airingAt * 1000);
+          const idx = getWeekdayIndex(d);
+          perDay[idx].push({ media, node });
+        }
+      }
+
+      for (const dayItems of perDay) {
+        dayItems.sort((a, b) => a.node.airingAt - b.node.airingAt);
+      }
+
+      for (let i = 0; i < 7; i++) {
+        const dayDate = new Date(weekStart);
+        dayDate.setDate(dayDate.getDate() + i);
+
+        const column = document.createElement("section");
+        column.className = "day-column";
+        const current = isCurrentWeek && getDateKey(dayDate) === getDateKey(now) ? "current" : "";
+        column.innerHTML = `
+          <div class="day-header ${current}">
+            ${WEEK_DAYS[i]}<br><span style="font-weight:400;color:var(--muted);font-size:0.78rem;">${DATE_FORMATTER.format(dayDate)}</span>
+          </div>
+          <div class="day-body"></div>
+        `;
+        const body = column.querySelector(".day-body");
+        const items = perDay[i];
+
+        if (!items.length) {
+          body.innerHTML = `<div class="empty">No unwatched episodes</div>`;
+        } else {
+          for (const { media, node } of items) {
+            const localTime = TIME_FORMATTER.format(new Date(node.airingAt * 1000));
+            const card = buildCard(media, `Ep ${node.episode} • ${localTime}`, 1, node.airingAt, node.episode);
+            body.appendChild(card);
+          }
+        }
+        ui.scheduleGrid.appendChild(column);
+      }
+    }
+
+    function onAnimeCardClick(anime, episodeContext = null) {
+      const links = getStoredLinks();
+      const saved = links[anime.id];
+      if (saved) {
+        window.open(saved, "_blank", "noopener,noreferrer");
+        return;
+      }
+      state.pendingModalAnime = anime;
+      const episodeLabel = episodeContext?.episodeNumber ? ` (Episode ${episodeContext.episodeNumber})` : "";
+      ui.modalAnimeTitle.textContent = `${anime.title?.english || anime.title?.romaji || "Anime"}${episodeLabel}`;
+      ui.streamingLinkInput.value = anime.siteUrl || "";
+      ui.linkModal.showModal();
+    }
+
+    async function reloadData() {
+      resetCatchupSummaryUI();
+      ui.totalBehindValue.textContent = "Loading catch-up totals...";
+      ui.catchupList.innerHTML = `<div class="empty">Loading...</div>`;
+      ui.scheduleGrid.innerHTML = `<div class="empty">Loading...</div>`;
+      try {
+        state.entries = await fetchSeasonalData(state.user, state.season, state.year);
+        renderCatchupList(state.entries);
+        renderWeeklySchedule(state.entries, state.selectedWeekStart);
+        ui.weekLabel.textContent = weekRangeLabel(state.selectedWeekStart);
+      } catch (err) {
+        const message = err?.message || "Unknown error";
+        resetCatchupSummaryUI();
+        ui.catchupList.innerHTML = `<div class="empty">Failed to load data: ${escapeHTML(message)}</div>`;
+        ui.scheduleGrid.innerHTML = `<div class="empty">Failed to load weekly schedule.</div>`;
+      }
+    }
+
+    function shiftWeek(days) {
+      const next = new Date(state.selectedWeekStart);
+      next.setDate(next.getDate() + days);
+      state.selectedWeekStart = next;
+      ui.weekLabel.textContent = weekRangeLabel(state.selectedWeekStart);
+      renderWeeklySchedule(state.entries, state.selectedWeekStart);
+    }
+
+    function setupEvents() {
+      ui.loadBtn.addEventListener("click", async () => {
+        state.user = ui.userInput.value.trim() || "ChuckySRB";
+        state.season = ui.seasonInput.value;
+        state.year = Number(ui.yearInput.value) || new Date().getFullYear();
+        state.selectedWeekStart = getWeekStartForSelection(state.season, state.year);
+        ui.weekLabel.textContent = weekRangeLabel(state.selectedWeekStart);
+        await reloadData();
+      });
+
+      ui.prevWeekBtn.addEventListener("click", () => shiftWeek(-7));
+      ui.nextWeekBtn.addEventListener("click", () => shiftWeek(7));
+
+      ui.cancelModalBtn.addEventListener("click", () => {
+        state.pendingModalAnime = null;
+        ui.linkModal.close();
+      });
+
+      ui.linkForm.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        if (!state.pendingModalAnime) return;
+        const url = ui.streamingLinkInput.value.trim();
+        if (!url) return;
+        setStoredLink(state.pendingModalAnime.id, url);
+        ui.linkModal.close();
+        window.open(url, "_blank", "noopener,noreferrer");
+      });
+    }
+
+    function initializeDefaults() {
+      state.user = "ChuckySRB";
+      state.season = detectCurrentSeason();
+      state.year = new Date().getFullYear();
+      state.selectedWeekStart = getMondayStart(new Date());
+
+      ui.yearInput.max = String(new Date().getFullYear() + MAX_FUTURE_YEARS_OFFSET);
+      ui.userInput.value = state.user;
+      ui.seasonInput.value = state.season;
+      ui.yearInput.value = String(state.year);
+      ui.weekLabel.textContent = weekRangeLabel(state.selectedWeekStart);
+    }
+
+    (async function start() {
+      initializeDefaults();
+      setupEvents();
+      await reloadData();
+    })();
+  </script>
+</body>
+</html>
