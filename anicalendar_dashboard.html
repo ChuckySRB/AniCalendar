@@ -424,6 +424,7 @@
     const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const CATCHUP_LINKS_KEY = "anicalendar_streaming_links";
     const MAX_FUTURE_YEARS_OFFSET = 10;
+    const TWO_COUR_EPISODE_THRESHOLD = 20;
     const FALLBACK_TIMEZONE = "Europe/Belgrade";
     const USER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIMEZONE;
     const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
@@ -540,7 +541,11 @@
       if (isCurrentSeason) return true;
       const previous = getPreviousSeasonYear(season, year);
       const isPreviousSeason = media.season === previous.season && media.seasonYear === previous.year;
-      return isPreviousSeason && Number(media.episodes || 0) >= 20;
+      return isPreviousSeason && Number(media.episodes || 0) >= TWO_COUR_EPISODE_THRESHOLD;
+    }
+
+    function clampWatchedProgress(progress, aired) {
+      return Math.max(0, Math.min(progress, aired));
     }
 
     function escapeHTML(text = "") {
@@ -685,7 +690,7 @@
 
       const totals = items.reduce((acc, item) => {
         const released = Math.max(0, item.aired);
-        const watched = Math.max(0, Math.min(item.entry.progress, item.aired));
+        const watched = clampWatchedProgress(item.entry.progress, item.aired);
         acc.releasedTotal += released;
         acc.watchedTotal += watched;
         acc.episodesBehindTotal += item.missing;
