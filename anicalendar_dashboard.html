@@ -555,7 +555,8 @@
 
       for (const item of items) {
         const severity = severityLevel(item.missing);
-        const metaText = `${item.missing} episode(s) behind • Progress ${item.entry.progress}`;
+        const episodeLabel = item.missing === 1 ? "episode" : "episodes";
+        const metaText = `${item.missing} ${episodeLabel} behind • Progress ${item.entry.progress}`;
         const card = buildCard(item.entry.media, metaText, severity);
         ui.catchupList.appendChild(card);
       }
