@@ -371,6 +371,10 @@
       hour: "2-digit",
       minute: "2-digit",
     });
+    const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
+      timeZone: USER_TIMEZONE,
+      weekday: "short",
+    });
 
     const ui = {
       userInput: document.getElementById("userInput"),
@@ -423,8 +427,8 @@
     function getDateKey(date) {
       const parts = DATE_FORMATTER.formatToParts(date);
       const year = parts.find(p => p.type === "year")?.value || "";
-      const month = parts.find(p => p.type === "month")?.value || "";
-      const day = parts.find(p => p.type === "day")?.value || "";
+      const month = (parts.find(p => p.type === "month")?.value || "").padStart(2, "0");
+      const day = (parts.find(p => p.type === "day")?.value || "").padStart(2, "0");
       return `${year}-${month}-${day}`;
     }
 
@@ -443,8 +447,15 @@
     }
 
     function getWeekdayIndex(date) {
-      const zoned = new Date(date.toLocaleString("en-US", { timeZone: USER_TIMEZONE }));
-      return (zoned.getDay() + 6) % 7;
+      const weekday = WEEKDAY_FORMATTER.formatToParts(date).find(p => p.type === "weekday")?.value;
+      if (weekday === "Mon") return 0;
+      if (weekday === "Tue") return 1;
+      if (weekday === "Wed") return 2;
+      if (weekday === "Thu") return 3;
+      if (weekday === "Fri") return 4;
+      if (weekday === "Sat") return 5;
+      if (weekday === "Sun") return 6;
+      return (date.getDay() + 6) % 7;
     }
 
     function escapeHTML(text = "") {
