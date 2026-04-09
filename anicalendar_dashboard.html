@@ -312,7 +312,7 @@
           <option>SUMMER</option>
           <option>FALL</option>
         </select>
-        <input id="yearInput" type="number" min="1990" max="2100" />
+        <input id="yearInput" type="number" min="1990" />
         <button id="loadBtn">Load</button>
       </div>
       <div class="week-nav">
@@ -554,8 +554,8 @@
 
       for (const item of items) {
         const severity = severityLevel(item.missing);
-        const subtitle = `${item.missing} episode(s) behind • Progress ${item.entry.progress}`;
-        const card = buildCard(item.entry.media, subtitle, severity);
+        const catchupMetaText = `${item.missing} episode(s) behind • Progress ${item.entry.progress}`;
+        const card = buildCard(item.entry.media, catchupMetaText, severity);
         ui.catchupList.appendChild(card);
       }
     }
@@ -689,6 +689,7 @@
       state.year = new Date().getFullYear();
       state.selectedWeekStart = getMondayStart(new Date());
 
+      ui.yearInput.max = String(new Date().getFullYear() + 10);
       ui.userInput.value = state.user;
       ui.seasonInput.value = state.season;
       ui.yearInput.value = String(state.year);
