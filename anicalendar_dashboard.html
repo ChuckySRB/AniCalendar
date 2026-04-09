@@ -153,6 +153,44 @@
       padding-right: 4px;
     }
 
+    .catchup-summary {
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #33548f;
+      border-radius: 10px;
+      background: rgba(22, 40, 76, 0.6);
+    }
+
+    .behind-total {
+      margin: 0 0 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #edf4ff;
+    }
+
+    .watch-progress {
+      width: 100%;
+      height: 9px;
+      border-radius: 999px;
+      background: rgba(16, 25, 44, 0.9);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .watch-progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #2b7fff, #74b2ff);
+      transition: width 0.2s ease;
+    }
+
+    .watch-progress-label {
+      margin-top: 6px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(7, minmax(190px, 1fr));
@@ -291,6 +329,27 @@
       border-color: #3e8cff;
     }
 
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #3a5f98 #111c35;
+    }
+
+    *::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    *::-webkit-scrollbar-track {
+      background: #111c35;
+      border-radius: 999px;
+    }
+
+    *::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #2b4f86, #3f6db3);
+      border-radius: 999px;
+      border: 2px solid #111c35;
+    }
+
     @media (max-width: 1100px) {
       main { grid-template-columns: 1fr; }
       .catchup-list { max-height: 300px; }
@@ -326,6 +385,13 @@
   <main>
     <aside>
       <h2>Current Season Catch-up</h2>
+      <div id="catchupSummary" class="catchup-summary">
+        <p id="totalBehindValue" class="behind-total">0 episodes behind</p>
+        <div class="watch-progress" aria-label="Watched progress compared to released episodes">
+          <div id="watchProgressFill" class="watch-progress-fill"></div>
+        </div>
+        <div id="watchProgressLabel" class="watch-progress-label">Watched 0 / 0 released (0%)</div>
+      </div>
       <div id="catchupList" class="catchup-list"></div>
     </aside>
 
@@ -384,6 +450,10 @@
       prevWeekBtn: document.getElementById("prevWeekBtn"),
       nextWeekBtn: document.getElementById("nextWeekBtn"),
       weekLabel: document.getElementById("weekLabel"),
+      catchupSummary: document.getElementById("catchupSummary"),
+      totalBehindValue: document.getElementById("totalBehindValue"),
+      watchProgressFill: document.getElementById("watchProgressFill"),
+      watchProgressLabel: document.getElementById("watchProgressLabel"),
       catchupList: document.getElementById("catchupList"),
       scheduleGrid: document.getElementById("scheduleGrid"),
       linkModal: document.getElementById("linkModal"),
@@ -456,6 +526,21 @@
       if (weekday === "Sat") return 5;
       if (weekday === "Sun") return 6;
       return (date.getDay() + 6) % 7;
+    }
+
+    function getPreviousSeasonYear(season, year) {
+      if (season === "WINTER") return { season: "FALL", year: year - 1 };
+      if (season === "SPRING") return { season: "WINTER", year };
+      if (season === "SUMMER") return { season: "SPRING", year };
+      return { season: "SUMMER", year };
+    }
+
+    function shouldIncludeMediaInSelection(media, season, year) {
+      const isCurrentSeason = media.season === season && media.seasonYear === year;
+      if (isCurrentSeason) return true;
+      const previous = getPreviousSeasonYear(season, year);
+      const isPreviousSeason = media.season === previous.season && media.seasonYear === previous.year;
+      return isPreviousSeason && Number(media.episodes || 0) >= 20;
     }
 
     function escapeHTML(text = "") {
@@ -553,7 +638,7 @@
           const media = entry.media;
           if (!media) continue;
           if (entry.status === "DROPPED") continue;
-          if (media.season !== season || media.seasonYear !== year) continue;
+          if (!shouldIncludeMediaInSelection(media, season, year)) continue;
           const normalized = {
             status: entry.status,
             progress: Number(entry.progress || 0),
@@ -594,9 +679,18 @@
         .map(entry => {
           const aired = calculateAiredCount(entry.media);
           const missing = Math.max(0, aired - entry.progress);
-          return { entry, missing };
+          return { entry, missing, aired };
         })
         .sort((a, b) => b.missing - a.missing);
+
+      const releasedTotal = items.reduce((sum, item) => sum + Math.max(0, item.aired), 0);
+      const watchedTotal = items.reduce((sum, item) => sum + Math.max(0, Math.min(item.entry.progress, item.aired)), 0);
+      const episodesBehindTotal = items.reduce((sum, item) => sum + item.missing, 0);
+      const watchedPercent = releasedTotal > 0 ? Math.round((watchedTotal / releasedTotal) * 100) : 0;
+      const behindLabel = episodesBehindTotal === 1 ? "episode" : "episodes";
+      ui.totalBehindValue.textContent = `${episodesBehindTotal} ${behindLabel} behind`;
+      ui.watchProgressFill.style.width = `${Math.max(0, Math.min(100, watchedPercent))}%`;
+      ui.watchProgressLabel.textContent = `Watched ${watchedTotal} / ${releasedTotal} released (${watchedPercent}%)`;
 
       if (!items.length) {
         ui.catchupList.innerHTML = `<div class="empty">No anime found for this season/user.</div>`;
@@ -685,6 +779,9 @@
     }
 
     async function reloadData() {
+      ui.totalBehindValue.textContent = "Loading catch-up totals...";
+      ui.watchProgressFill.style.width = "0%";
+      ui.watchProgressLabel.textContent = "Watched 0 / 0 released (0%)";
       ui.catchupList.innerHTML = `<div class="empty">Loading...</div>`;
       ui.scheduleGrid.innerHTML = `<div class="empty">Loading...</div>`;
       try {
@@ -694,6 +791,9 @@
         ui.weekLabel.textContent = weekRangeLabel(state.selectedWeekStart);
       } catch (err) {
         const message = err?.message || "Unknown error";
+        ui.totalBehindValue.textContent = "0 episodes behind";
+        ui.watchProgressFill.style.width = "0%";
+        ui.watchProgressLabel.textContent = "Watched 0 / 0 released (0%)";
         ui.catchupList.innerHTML = `<div class="empty">Failed to load data: ${escapeHTML(message)}</div>`;
         ui.scheduleGrid.innerHTML = `<div class="empty">Failed to load weekly schedule.</div>`;
       }
