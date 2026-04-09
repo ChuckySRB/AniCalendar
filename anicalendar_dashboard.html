@@ -357,7 +357,7 @@
     const ANILIST_API = "https://graphql.anilist.co";
     const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const CATCHUP_LINKS_KEY = "anicalendar_streaming_links";
-    const MAX_FUTURE_YEARS = 10;
+    const MAX_FUTURE_YEARS_OFFSET = 10;
 
     const ui = {
       userInput: document.getElementById("userInput"),
@@ -690,7 +690,7 @@
       state.year = new Date().getFullYear();
       state.selectedWeekStart = getMondayStart(new Date());
 
-      ui.yearInput.max = String(new Date().getFullYear() + MAX_FUTURE_YEARS);
+      ui.yearInput.max = String(new Date().getFullYear() + MAX_FUTURE_YEARS_OFFSET);
       ui.userInput.value = state.user;
       ui.seasonInput.value = state.season;
       ui.yearInput.value = String(state.year);
