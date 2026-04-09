@@ -358,6 +358,24 @@
     const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const CATCHUP_LINKS_KEY = "anicalendar_streaming_links";
     const MAX_FUTURE_YEARS_OFFSET = 10;
+    const FALLBACK_TIMEZONE = "Europe/Belgrade";
+    const USER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIMEZONE;
+    const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+      timeZone: USER_TIMEZONE,
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    });
+    const TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
+      timeZone: USER_TIMEZONE,
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
+      timeZone: USER_TIMEZONE,
+      weekday: "short",
+    });
+    const WEEKDAY_INDEX = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
 
     const ui = {
       userInput: document.getElementById("userInput"),
@@ -404,7 +422,29 @@
     function weekRangeLabel(startDate) {
       const end = new Date(startDate);
       end.setDate(end.getDate() + 6);
-      return `${startDate.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+      return `${DATE_FORMATTER.format(startDate)} - ${DATE_FORMATTER.format(end)}`;
+    }
+
+    function getDateKey(date) {
+      const parts = DATE_FORMATTER.formatToParts(date);
+      const year = parts.find(p => p.type === "year")?.value || "";
+      const month = parts.find(p => p.type === "month")?.value || "";
+      const day = parts.find(p => p.type === "day")?.value || "";
+      return `${year}-${month}-${day}`;
+    }
+
+    function getSeasonStartMonth(season) {
+      if (season === "WINTER") return 0;
+      if (season === "SPRING") return 3;
+      if (season === "SUMMER") return 6;
+      return 9;
+    }
+
+    function getWeekStartForSelection(season, year) {
+      const current = new Date();
+      const isCurrentSelection = season === detectCurrentSeason(current) && year === current.getFullYear();
+      if (isCurrentSelection) return getMondayStart(current);
+      return getMondayStart(new Date(year, getSeasonStartMonth(season), 1));
     }
 
     function escapeHTML(text = "") {
@@ -496,21 +536,25 @@
       }
 
       const lists = json?.data?.MediaListCollection?.lists || [];
-      const entries = [];
+      const byMediaId = new Map();
       for (const list of lists) {
         for (const entry of list.entries || []) {
           const media = entry.media;
           if (!media) continue;
           if (entry.status === "DROPPED") continue;
           if (media.season !== season || media.seasonYear !== year) continue;
-          entries.push({
+          const normalized = {
             status: entry.status,
             progress: Number(entry.progress || 0),
             media,
-          });
+          };
+          const existing = byMediaId.get(media.id);
+          if (!existing || normalized.progress > existing.progress) {
+            byMediaId.set(media.id, normalized);
+          }
         }
       }
-      return entries;
+      return [...byMediaId.values()];
     }
 
     function getAllAiringNodes(media) {
@@ -577,7 +621,7 @@
           if (node.episode <= progress) continue;
           if (node.airingAt < weekStartTs || node.airingAt >= weekEndTs) continue;
           const d = new Date(node.airingAt * 1000);
-          const idx = (d.getDay() + 6) % 7;
+          const idx = WEEKDAY_INDEX[WEEKDAY_FORMATTER.format(d)] ?? 0;
           perDay[idx].push({ media, node });
         }
       }
@@ -592,10 +636,10 @@
 
         const column = document.createElement("section");
         column.className = "day-column";
-        const current = isCurrentWeek && dayDate.toDateString() === now.toDateString() ? "current" : "";
+        const current = isCurrentWeek && getDateKey(dayDate) === getDateKey(now) ? "current" : "";
         column.innerHTML = `
           <div class="day-header ${current}">
-            ${WEEK_DAYS[i]}<br><span style="font-weight:400;color:var(--muted);font-size:0.78rem;">${dayDate.toLocaleDateString()}</span>
+            ${WEEK_DAYS[i]}<br><span style="font-weight:400;color:var(--muted);font-size:0.78rem;">${DATE_FORMATTER.format(dayDate)}</span>
           </div>
           <div class="day-body"></div>
         `;
@@ -606,7 +650,7 @@
           body.innerHTML = `<div class="empty">No unwatched episodes</div>`;
         } else {
           for (const { media, node } of items) {
-            const localTime = new Date(node.airingAt * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            const localTime = TIME_FORMATTER.format(new Date(node.airingAt * 1000));
             const card = buildCard(media, `Ep ${node.episode} • ${localTime}`, 1, node.airingAt, node.episode);
             body.appendChild(card);
           }
@@ -657,7 +701,8 @@
         state.user = ui.userInput.value.trim() || "ChuckySRB";
         state.season = ui.seasonInput.value;
         state.year = Number(ui.yearInput.value) || new Date().getFullYear();
-        state.selectedWeekStart = getMondayStart(new Date());
+        state.selectedWeekStart = getWeekStartForSelection(state.season, state.year);
+        ui.weekLabel.textContent = weekRangeLabel(state.selectedWeekStart);
         await reloadData();
       });
 
