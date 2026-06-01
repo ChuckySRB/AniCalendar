@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b0f19" />
+  <title>AniCalendar · Streaming Links</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --panel: #151f35;
+      --panel-2: #1d2a4a;
+      --text: #d7e3ff;
+      --muted: #92a2c5;
+      --accent: #2b7fff;
+      --border: #2a3a63;
+      --danger: #ff5f63;
+      --ok: #76d47c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #0a0f1e 0%, #0f1730 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 15, 25, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: #f0f5ff;
+    }
+
+    .logo {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, #2b7fff, #74b2ff);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      color: #fff;
+      box-shadow: 0 0 18px rgba(43, 127, 255, 0.45);
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .actions a, .actions button {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: inherit;
+    }
+
+    .actions button.primary {
+      background: var(--accent);
+      border-color: #3e8cff;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .actions button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    main {
+      flex: 1;
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+    }
+
+    .intro {
+      background: rgba(21, 31, 53, 0.84);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .intro code {
+      background: rgba(43, 127, 255, 0.12);
+      border: 1px solid var(--border);
+      padding: 1px 5px;
+      border-radius: 5px;
+      color: #cde0ff;
+      font-size: 0.85rem;
+    }
+
+    .editor {
+      display: flex;
+      flex-direction: column;
+      min-height: 380px;
+      background: rgba(9, 15, 30, 0.55);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .editor textarea {
+      flex: 1;
+      width: 100%;
+      min-height: 360px;
+      resize: vertical;
+      padding: 14px;
+      background: #0d152a;
+      color: #e6efff;
+      border: 0;
+      font-family: "Fira Code", "JetBrains Mono", Consolas, "Cascadia Code", monospace;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      tab-size: 2;
+      outline: none;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: rgba(21, 31, 53, 0.84);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 0.88rem;
+    }
+
+    .status-bar .status {
+      color: var(--muted);
+    }
+
+    .status-bar .status.ok { color: var(--ok); }
+    .status-bar .status.error { color: var(--danger); }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: center;
+      background: rgba(11, 15, 25, 0.9);
+    }
+
+    footer a {
+      color: #9cc2ff;
+      text-decoration: none;
+      margin: 0 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">A</div>
+      <span>AniCalendar · Streaming Links</span>
+    </div>
+    <div class="actions">
+      <a href="/">← Dashboard</a>
+      <button id="reloadBtn" type="button">Reload</button>
+      <button id="formatBtn" type="button">Format</button>
+      <button id="saveBtn" class="primary" type="button">Save</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="intro">
+      Edit your streaming links as JSON. Each key is an AniList media ID; each value is an object with optional <code>title</code> and a required <code>url</code>. Saved to <code>streaming_links.json</code> on the server, shared by every device that loads this dashboard.
+    </div>
+
+    <section class="editor">
+      <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" wrap="off">Loading...</textarea>
+    </section>
+
+    <div class="status-bar">
+      <div id="status" class="status">Loading current file...</div>
+      <div id="hint" class="status">Ctrl/Cmd + S to save</div>
+    </div>
+  </main>
+
+  <footer>
+    © ChuckySRB 2026 ·
+    <a href="https://github.com/ChuckySRB/AniCalendar" target="_blank" rel="noopener noreferrer">GitHub</a>
+  </footer>
+
+  <script>
+    const LINKS_API = "/api/links";
+
+    const editor = document.getElementById("editor");
+    const statusEl = document.getElementById("status");
+    const reloadBtn = document.getElementById("reloadBtn");
+    const formatBtn = document.getElementById("formatBtn");
+    const saveBtn = document.getElementById("saveBtn");
+
+    let dirty = false;
+    let lastLoadedText = "";
+
+    function setStatus(message, kind = "info") {
+      statusEl.textContent = message;
+      statusEl.classList.remove("ok", "error");
+      if (kind === "ok") statusEl.classList.add("ok");
+      if (kind === "error") statusEl.classList.add("error");
+    }
+
+    function markDirty() {
+      dirty = editor.value !== lastLoadedText;
+      if (dirty) setStatus("Unsaved changes");
+    }
+
+    function setBusy(busy) {
+      saveBtn.disabled = busy;
+      reloadBtn.disabled = busy;
+      formatBtn.disabled = busy;
+    }
+
+    async function loadFile() {
+      setBusy(true);
+      setStatus("Loading current file...");
+      try {
+        const resp = await fetch(LINKS_API, { cache: "no-store" });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const text = await resp.text();
+        const pretty = prettifyIfPossible(text);
+        editor.value = pretty;
+        lastLoadedText = pretty;
+        dirty = false;
+        setStatus(`Loaded ${formatTimestamp()}`, "ok");
+      } catch (err) {
+        setStatus(`Failed to load: ${err.message || err}`, "error");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function prettifyIfPossible(text) {
+      try {
+        const parsed = JSON.parse(text);
+        return JSON.stringify(parsed, null, 2) + "\n";
+      } catch {
+        return text;
+      }
+    }
+
+    function formatCurrent() {
+      try {
+        const parsed = JSON.parse(editor.value);
+        editor.value = JSON.stringify(parsed, null, 2) + "\n";
+        markDirty();
+        setStatus("Formatted", "ok");
+      } catch (err) {
+        setStatus(`Invalid JSON: ${err.message}`, "error");
+      }
+    }
+
+    async function saveFile() {
+      let parsed;
+      try {
+        parsed = JSON.parse(editor.value);
+      } catch (err) {
+        setStatus(`Invalid JSON: ${err.message}`, "error");
+        return;
+      }
+      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+        setStatus("Top-level value must be a JSON object.", "error");
+        return;
+      }
+      setBusy(true);
+      setStatus("Saving...");
+      try {
+        const resp = await fetch(LINKS_API, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(parsed),
+        });
+        if (!resp.ok) {
+          const detail = await resp.text().catch(() => "");
+          throw new Error(detail || `HTTP ${resp.status}`);
+        }
+        const savedText = await resp.text();
+        lastLoadedText = savedText;
+        editor.value = savedText;
+        dirty = false;
+        setStatus(`Saved ${formatTimestamp()}`, "ok");
+      } catch (err) {
+        setStatus(`Failed to save: ${err.message || err}`, "error");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function formatTimestamp() {
+      const fmt = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      return `at ${fmt.format(new Date())}`;
+    }
+
+    function registerServiceWorker() {
+      if (!("serviceWorker" in navigator)) return;
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/service-worker.js").catch((err) => {
+          console.warn("Service worker registration failed:", err);
+        });
+      });
+    }
+
+    editor.addEventListener("input", markDirty);
+    reloadBtn.addEventListener("click", () => {
+      if (dirty && !confirm("Discard unsaved changes and reload from server?")) return;
+      loadFile();
+    });
+    formatBtn.addEventListener("click", formatCurrent);
+    saveBtn.addEventListener("click", saveFile);
+
+    window.addEventListener("keydown", (ev) => {
+      const isSave = (ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "s";
+      if (isSave) {
+        ev.preventDefault();
+        saveFile();
+      }
+    });
+
+    window.addEventListener("beforeunload", (ev) => {
+      if (dirty) {
+        ev.preventDefault();
+        ev.returnValue = "";
+      }
+    });
+
+    registerServiceWorker();
+    loadFile();
+  </script>
+</body>
+</html>

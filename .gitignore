@@ -3,6 +3,9 @@ secret.json
 token.json
 .anicalendar_venv/
 
+# AniCalendar dashboard runtime data (personal streaming links)
+streaming_links.json
+
 
 
 # Byte-compiled / optimized / DLL files

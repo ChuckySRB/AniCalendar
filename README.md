@@ -52,7 +52,7 @@ python run.py -u ChuckySRB -s Fall -y 2026
 
 ### 5. Dashboard Page (AniList Catch-up View)
 
-Open `/anicalendar_dashboard.html` in your browser to use the seasonal catch-up dashboard.
+The dashboard is served by a small [Bun](https://bun.sh) HTTP server so it can run on your LAN and share streaming links across every device.
 
 Default values:
 - User: `ChuckySRB`
@@ -64,7 +64,55 @@ Features:
 - Current week loaded by default with current day highlighted
 - Left catch-up list sorted by how many aired episodes you are behind
 - Color severity for backlog (`5+` red, `3-4` orange, `2` yellow, `1` white, `0` green)
-- Streaming-link modal on anime card click (saved in browser local storage)
+- Streaming-link modal on anime card click, persisted to `streaming_links.json` on the server
+- Dedicated **Edit Links** page (`/links`) for live-editing the JSON file in the browser
+- PWA: installable on phones, tablets, and desktops with offline shell caching
+
+#### Run the dashboard server
+
+```bash
+# One-time: install Bun (Linux/macOS)
+curl -fsSL https://bun.sh/install | bash
+
+# Start the server (binds 0.0.0.0:7843 by default)
+bun run server.js
+```
+
+Then open:
+- `http://<server-ip>:7843/` — dashboard
+- `http://<server-ip>:7843/links` — streaming-links JSON editor
+
+Override host/port with env vars when needed:
+
+```bash
+ANICALENDAR_PORT=8080 ANICALENDAR_HOST=0.0.0.0 bun run server.js
+```
+
+#### Streaming links file
+
+Links are stored next to the HTML in `streaming_links.json` (gitignored). The server creates an empty `{}` on first launch. Schema:
+
+```json
+{
+  "21519": {
+    "title": "Frieren: Beyond Journey's End",
+    "url": "https://your-stream/series/frieren"
+  }
+}
+```
+
+- Keys are AniList media IDs (the dashboard's modal fills these in automatically when you add a link).
+- Use `/links` in the browser to view, edit, format, and save the whole file.
+- Copy the file to back it up or share your link set with a friend.
+
+See `streaming_links.example.json` for a starter you can rename to `streaming_links.json`.
+
+#### Install as a PWA
+
+With the server running:
+1. Open `http://<server-ip>:7843/` on your phone, tablet, or laptop.
+2. Use the browser's **Install app** / **Add to Home Screen** option.
+3. Launch from the home screen; it runs full-screen and works offline for previously-loaded screens (live AniList data still requires network).
 
 ---
 

@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b0f19" />
   <title>AniCalendar Dashboard</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <style>
     :root {
       --bg: #0b0f19;
@@ -95,6 +100,18 @@
       border-color: #3e8cff;
       font-weight: 600;
     }
+
+    .nav-link {
+      color: #9cc2ff;
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--panel-2);
+    }
+
+    .nav-link:hover { border-color: #3e73be; }
 
     .week-nav {
       display: flex;
@@ -373,6 +390,7 @@
         </select>
         <input id="yearInput" type="number" min="1990" />
         <button id="loadBtn">Load</button>
+        <a class="nav-link" href="/links">Edit Links</a>
       </div>
       <div class="week-nav">
         <button id="prevWeekBtn" aria-label="Previous week">←</button>
@@ -421,8 +439,8 @@
 
   <script>
     const ANILIST_API = "https://graphql.anilist.co";
+    const LINKS_API = "/api/links";
     const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    const CATCHUP_LINKS_KEY = "anicalendar_streaming_links";
     const MAX_FUTURE_YEARS_OFFSET = 10;
     const PREVIOUS_SEASON_CARRYOVER_MIN_EPISODES = 20;
     const FALLBACK_TIMEZONE = "Europe/Belgrade";
@@ -471,6 +489,8 @@
       selectedWeekStart: null,
       entries: [],
       pendingModalAnime: null,
+      links: {},
+      linksLoaded: false,
     };
 
     function detectCurrentSeason(date = new Date()) {
@@ -567,18 +587,39 @@
         .replaceAll("'", "&#039;");
     }
 
-    function getStoredLinks() {
+    function getLinkUrl(animeId) {
+      const entry = state.links[animeId];
+      if (!entry) return null;
+      if (typeof entry === "string") return entry;
+      if (typeof entry === "object" && typeof entry.url === "string") return entry.url;
+      return null;
+    }
+
+    async function loadLinksFromServer() {
       try {
-        return JSON.parse(localStorage.getItem(CATCHUP_LINKS_KEY) || "{}");
-      } catch {
-        return {};
+        const resp = await fetch(LINKS_API, { cache: "no-store" });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        state.links = (data && typeof data === "object" && !Array.isArray(data)) ? data : {};
+      } catch (err) {
+        console.warn("Failed to load streaming links:", err);
+        state.links = {};
+      } finally {
+        state.linksLoaded = true;
       }
     }
 
-    function setStoredLink(animeId, url) {
-      const links = getStoredLinks();
-      links[animeId] = url;
-      localStorage.setItem(CATCHUP_LINKS_KEY, JSON.stringify(links));
+    async function saveLinkToServer(animeId, url, title) {
+      const resp = await fetch(`${LINKS_API}/${encodeURIComponent(animeId)}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, title }),
+      });
+      if (!resp.ok) {
+        const detail = await resp.text().catch(() => "");
+        throw new Error(detail || `HTTP ${resp.status}`);
+      }
+      state.links[animeId] = title ? { title, url } : { url };
     }
 
     function severityLevel(missingCount) {
@@ -786,8 +827,7 @@
     }
 
     function onAnimeCardClick(anime, episodeContext = null) {
-      const links = getStoredLinks();
-      const saved = links[anime.id];
+      const saved = getLinkUrl(anime.id);
       if (saved) {
         window.open(saved, "_blank", "noopener,noreferrer");
         return;
@@ -843,13 +883,21 @@
         ui.linkModal.close();
       });
 
-      ui.linkForm.addEventListener("submit", (ev) => {
+      ui.linkForm.addEventListener("submit", async (ev) => {
         ev.preventDefault();
         if (!state.pendingModalAnime) return;
         const url = ui.streamingLinkInput.value.trim();
         if (!url) return;
-        setStoredLink(state.pendingModalAnime.id, url);
+        const anime = state.pendingModalAnime;
+        const title = anime.title?.english || anime.title?.romaji || "";
+        try {
+          await saveLinkToServer(anime.id, url, title);
+        } catch (err) {
+          alert(`Failed to save link: ${err.message || err}`);
+          return;
+        }
         ui.linkModal.close();
+        state.pendingModalAnime = null;
         window.open(url, "_blank", "noopener,noreferrer");
       });
     }
@@ -867,9 +915,20 @@
       ui.weekLabel.textContent = weekRangeLabel(state.selectedWeekStart);
     }
 
+    function registerServiceWorker() {
+      if (!("serviceWorker" in navigator)) return;
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/service-worker.js").catch((err) => {
+          console.warn("Service worker registration failed:", err);
+        });
+      });
+    }
+
     (async function start() {
       initializeDefaults();
       setupEvents();
+      registerServiceWorker();
+      await loadLinksFromServer();
       await reloadData();
     })();
   </script>
