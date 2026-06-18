@@ -445,7 +445,7 @@
     const PREVIOUS_SEASON_CARRYOVER_MIN_EPISODES = 20;
     const FALLBACK_TIMEZONE = "Europe/Belgrade";
     const USER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIMEZONE;
-    const DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+    const DATE_PARTS_FORMATTER = new Intl.DateTimeFormat(undefined, {
       timeZone: USER_TIMEZONE,
       year: "numeric",
       month: "2-digit",
@@ -512,11 +512,19 @@
     function weekRangeLabel(startDate) {
       const end = new Date(startDate);
       end.setDate(end.getDate() + 6);
-      return `${DATE_FORMATTER.format(startDate)} - ${DATE_FORMATTER.format(end)}`;
+      return `${formatDateDDMMYYYY(startDate)} - ${formatDateDDMMYYYY(end)}`;
+    }
+
+    function formatDateDDMMYYYY(date) {
+      const parts = DATE_PARTS_FORMATTER.formatToParts(date);
+      const year = parts.find(p => p.type === "year")?.value || "";
+      const month = (parts.find(p => p.type === "month")?.value || "").padStart(2, "0");
+      const day = (parts.find(p => p.type === "day")?.value || "").padStart(2, "0");
+      return `${day}/${month}/${year}`;
     }
 
     function getDateKey(date) {
-      const parts = DATE_FORMATTER.formatToParts(date);
+      const parts = DATE_PARTS_FORMATTER.formatToParts(date);
       const year = parts.find(p => p.type === "year")?.value || "";
       const month = (parts.find(p => p.type === "month")?.value || "").padStart(2, "0");
       const day = (parts.find(p => p.type === "day")?.value || "").padStart(2, "0");
@@ -806,7 +814,7 @@
         const current = isCurrentWeek && getDateKey(dayDate) === getDateKey(now) ? "current" : "";
         column.innerHTML = `
           <div class="day-header ${current}">
-            ${WEEK_DAYS[i]}<br><span style="font-weight:400;color:var(--muted);font-size:0.78rem;">${DATE_FORMATTER.format(dayDate)}</span>
+            ${WEEK_DAYS[i]}<br><span style="font-weight:400;color:var(--muted);font-size:0.78rem;">${formatDateDDMMYYYY(dayDate)}</span>
           </div>
           <div class="day-body"></div>
         `;
