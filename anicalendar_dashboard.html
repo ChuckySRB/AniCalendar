@@ -445,11 +445,11 @@
     const PREVIOUS_SEASON_CARRYOVER_MIN_EPISODES = 20;
     const FALLBACK_TIMEZONE = "Europe/Belgrade";
     const USER_TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || FALLBACK_TIMEZONE;
-    const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+    const DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
       timeZone: USER_TIMEZONE,
       year: "numeric",
-      month: "numeric",
-      day: "numeric",
+      month: "2-digit",
+      day: "2-digit",
     });
     const TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
       timeZone: USER_TIMEZONE,
